@@ -189,6 +189,12 @@ def classify(root, sample):
     node = root
     while not isinstance(node, Leaf):
         key = node.predicate(sample)
+        # TODO handle unknown attribute keys.
+        # Some strategies to consider:
+        #  1) assign most common label at this split?
+        #  2) send sample down each child node, collect results
+        #     a) assing most popular class label
+        #     b) respect stats of data and teach this function how to handle probabilities.
         node = node.children[key]
     return node.class_label
 
