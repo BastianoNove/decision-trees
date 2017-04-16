@@ -111,7 +111,21 @@ def counts_per_class(examples, classfn, classes):
         flat_dist.append(dist[cls])
     return flat_dist
 
-def gain(examples, classfn, classes, attrfn, attrvals):
+def group_by_fn(samples, fn):
+    vals = attrvalues(samples, fn)
+    groups = dict()
+
+    for val in vals:
+        groups[val] = []
+
+    for x in samples:
+        val = fn(x)
+        groups[val].append(x)
+
+    return groups
+
+
+def gain(examples, classfn, classes, attrfn):
     '''
     Calculates information gain after splitting on an attribute
 
@@ -128,8 +142,8 @@ def gain(examples, classfn, classes, attrfn, attrvals):
 
     en = entropy(counts_per_class(examples, classfn, classes))
     total = len(examples)
-
-    for val in attrvals:
+    attribute_values =  attrvalues(examples, attrfn)
+    for val in attribute_values:
         # Get all examples whose value for the attribute is val
         sv = list(filter(lambda example: attrfn(example) == val, examples))
         en -= len(sv)/total * entropy(counts_per_class(sv, classfn, classes))

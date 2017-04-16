@@ -1,8 +1,8 @@
 from decision_tree import accuracy
-from decision_tree import attrvalues
 from decision_tree import build_tree
 from decision_tree import chi_sqrd_from_groups
 from decision_tree import gain
+from decision_tree import group_by_fn
 
 from scipy import stats
 
@@ -26,25 +26,11 @@ attrfns = [zero, three, four, five, seven, eight, ten, eleven]
 
 def classfn(x): return int(x[14])
 
-
-def group_by_fn(samples, fn):
-    vals = attrvalues(samples, fn)
-    groups = dict()
-
-    for val in vals:
-        groups[val] = []
-
-    for x in samples:
-        val = fn(x)
-        groups[val].append(x)
-
-    return groups
-
 def cc_split_chi(samples, attrfns, classfn):
     # Compute information gain for every attfn used
     gains = []
     for attrfn in attrfns:
-        g = gain(samples, classfn, [0, 1], attrfn, attrvalues(samples, attrfn))
+        g = gain(samples, classfn, [0, 1], attrfn)
         gains.append((g, attrfn))
 
     splits = sorted(gains, key=lambda x: x[0])
