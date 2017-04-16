@@ -61,6 +61,5 @@ test_data = shuffled_data[414:].values.tolist()
 
 root = build_tree(x, cc_split_chi, cc_att_fns, cc_class)
 
-# TODO handle unknown values in training.
 print(accuracy(root, test_data, cc_class))
 
