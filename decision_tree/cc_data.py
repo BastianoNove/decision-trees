@@ -1,6 +1,6 @@
 from decision_tree import accuracy
 from decision_tree import build_tree
-from decision_tree import chi_sqrd_from_groups
+from decision_tree import chi_split
 from decision_tree import gain
 from decision_tree import group_by_fn
 
@@ -24,29 +24,11 @@ def twelveth(x): return x[12]
 
 cc_att_fns = [zeroth, third, fourth,fifth, sixth, eight,
               ninth, eleventh, twelveth]
-
-def cc_split_chi(samples, attrfns, classfn):
-    # Compute information gain for every attfn used
-    gains = []
-    for attrfn in attrfns:
-        g = gain(samples, classfn, ['+', '-'], attrfn)
-        gains.append((g, attrfn))
-
-    splits = sorted(gains, key=lambda x: x[0])
-    g, fn, p, best_groups = None, None, None, None
-    for gn, f in splits:
-        groups = group_by_fn(samples, f)
-        chi = chi_sqrd_from_groups( '+', '-', classfn, groups.values())
-        p_value = stats.chi2.pdf(chi , len(groups) - 1)
-        if p_value <= 0.01:
-            g, fn, p = gn, f, p_value
-            best_groups = groups
-    return best_groups, fn
-
 x = shuffled_data[:414].values.tolist()
+
 test_data = shuffled_data[414:].values.tolist()
 
-root = build_tree(x, cc_split_chi, cc_att_fns, cc_class)
+root = build_tree(x, cc_att_fns, cc_class, ('+', '-'), chi_split)
 
 print(accuracy(root, test_data, cc_class))
 

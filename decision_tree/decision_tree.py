@@ -1,5 +1,8 @@
 from collections import Counter
 from collections import defaultdict
+
+from scipy import stats
+
 import math
 
 class Node(object):
@@ -18,10 +21,18 @@ class Leaf(Node):
 
 
 
-def build_tree(samples, split, attrfns, classfn):
+def build_tree(samples, attrfns, classfn, classes, split):
     """Build a decision tree
        Parameters:
        samples   -- list of samples, where each sample is a list of attributes
+       attrfns   -- list of attribute functions. Each of these functions can be applied to a
+                    a sample to get a specific attribute.
+                    e.g., [day_attr, color_attr],  day_attr(sample) => "Monday"
+                    or color_attr(sample) => "Red"
+       classfn   -- function that takes a single sample and returns the class for that sample
+                    e.g., classfn(sample) => 'X'
+
+       classes   -- tuple of classes
        split     -- function that takes a list of samples, a list of attribute functions, and
                     a classfn function. The function splits the data based on the best attribute,
                     and returns a tuple:
@@ -46,20 +57,14 @@ def build_tree(samples, split, attrfns, classfn):
                      if this function determines there is no best way to split these samples,
                      it will return None, None
 
-       attrfns   -- list of attribute functions. Each of these functions can be applied to a
-                    a sample to get a specific attribute.
-                    e.g., [day_attr, color_attr],  day_attr(sample) => "Monday"
-                    or color_attr(sample) => "Red"
-       classfn     -- function that takes a single sample and returns the class for that sample
-                    e.g., classfn(sample) => 'X'
-    """
+           """
     if all(classfn(samples[0]) == classfn(sample) for sample in samples):
         return Leaf(classfn(samples[0]))
 
     if not attrfns:
         return Leaf(Counter(classfn(sample) for sample in samples).most_common()[0][0])
 
-    splits, attrfn = split(samples, attrfns, classfn)
+    splits, attrfn = split(samples, attrfns, classfn, classes)
     if not splits:
         return Leaf(Counter(classfn(sample) for sample in samples).most_common()[0][0])
 
@@ -67,7 +72,7 @@ def build_tree(samples, split, attrfns, classfn):
 
     child_nodes = dict()
     for key, group in splits.items():
-        child_nodes[key] = build_tree(group, split, remaining_attrfns, classfn)
+        child_nodes[key] = build_tree(group, remaining_attrfns, classfn, classes, split)
     return Internal(attrfn, child_nodes)
 
 
@@ -179,26 +184,42 @@ def chi_sqrd(groups):
     return chi_sqrd_stat
 
 
-def chi_sqrd_from_groups(a, b, classfn, groups):
+def chi_sqrd_from_groups(classes, classfn, groups):
     ''' computes chi squared statistic after splitting using attribute function attrnf
 
         parameters:
-        a       - first class
-        b       - second class
+        classes - tuple of two classes
         classfn - function that takes a single sample and returns the class of that sample
-        groups  - sequence of groups, where each group is a list of samples
-    '''
-    # For each group, compute the number of samples per class
+        groups  - sequence of groups, where each group is a list of samples ''' # For each group, compute the number of samples per class
     group_counts = []
     for group in groups:
         counts = [0, 0]
         for sample in group:
-            if classfn(sample) == a:
+            if classfn(sample) == classes[0]:
                 counts[0] += 1
             else:
                 counts[1] += 1
         group_counts.append(tuple(counts))
     return chi_sqrd(group_counts)
+
+
+def chi_split(samples, attrfns, classfn, classes):
+    # Compute information gain for every attfn used
+    gains = []
+    for attrfn in attrfns:
+        g = gain(samples, classfn, classes, attrfn)
+        gains.append((g, attrfn))
+
+    splits = sorted(gains, key=lambda x: x[0])
+    g, fn, p, best_groups = None, None, None, None
+    for gn, f in splits:
+        groups = group_by_fn(samples, f)
+        chi = chi_sqrd_from_groups(classes, classfn, groups.values())
+        p_value = stats.chi2.pdf(chi , len(groups) - 1)
+        if p_value <= 0.01:
+            g, fn, p = gn, f, p_value
+            best_groups = groups
+    return best_groups, fn
 
 def classify(root, sample):
     node = root
