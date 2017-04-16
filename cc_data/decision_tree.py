@@ -1,4 +1,5 @@
 from collections import Counter
+from collections import defaultdict
 import math
 
 class Node(object):
@@ -189,13 +190,24 @@ def classify(root, sample):
     node = root
     while not isinstance(node, Leaf):
         key = node.predicate(sample)
-        # TODO handle unknown attribute keys.
-        # Some strategies to consider:
-        #  1) assign most common label at this split?
-        #  2) send sample down each child node, collect results
-        #     a) assing most popular class label
-        #     b) respect stats of data and teach this function how to handle probabilities.
-        node = node.children[key]
+
+        if key in node.children:
+            node = node.children[key]
+        else:
+            # handle unknown attribute keys.
+            # Currently doing 2a.
+            #
+            # Some strategies to consider:
+            #  1) assign most common label at this split?
+            #  2) send sample down each child node, collect results
+            #     a) assing most popular class label
+            #     b) respect stats of data and teach this function how to handle probabilities.
+            labels = defaultdict(int)
+            for k in node.children.keys():
+                label = classify(node.children[k], sample)
+                labels[label] += 1
+            return max(labels.items(), key=lambda x: x[1])[0]
+
     return node.class_label
 
 def accuracy(root, test_data, classfn):
