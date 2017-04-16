@@ -1,6 +1,8 @@
 from decision_tree import accuracy
 from decision_tree import build_tree
 from decision_tree import chi_split
+from decision_tree import count_nodes
+from decision_tree import depth
 from decision_tree import gain
 from decision_tree import group_by_fn
 
@@ -28,4 +30,5 @@ def classfn(x): return int(x[14])
 x = shuffled_data[:414].values.tolist()
 test_data = shuffled_data[414:].values.tolist()
 root = build_tree(x, attrfns, classfn, (0,1), chi_split)
+print("Created decision tree with {0} nodes, depth {1}".format(count_nodes(root), depth(root)))
 print(accuracy(root, test_data, classfn))

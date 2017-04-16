@@ -254,3 +254,23 @@ def accuracy(root, test_data, classfn):
             wrong += 1
     return correct / (correct + wrong)
 
+def count_nodes(node):
+    if not node:
+        return 0
+
+    count = 0
+    if node.children:
+        for child in node.children.values():
+            count += count_nodes(child)
+    return count + 1
+
+def depth(node):
+    if not node:
+        return 0
+
+    depths = [0]
+    if node.children:
+        for child in node.children.values():
+            depths.append(depth(child))
+    return max(depths) + 1
+
